@@ -1,113 +1,97 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <h2>Essential Links</h2>
-    <ul>
-      <li>
-        <a
-          href="https://vuejs.org"
-          target="_blank"
-        >
-          Core Docs
-        </a>
-      </li>
-      <li>
-        <a
-          href="https://forum.vuejs.org"
-          target="_blank"
-        >
-          Forum
-        </a>
-      </li>
-      <li>
-        <a
-          href="https://chat.vuejs.org"
-          target="_blank"
-        >
-          Community Chat
-        </a>
-      </li>
-      <li>
-        <a
-          href="https://twitter.com/vuejs"
-          target="_blank"
-        >
-          Twitter
-        </a>
-      </li>
-      <br>
-      <li>
-        <a
-          href="http://vuejs-templates.github.io/webpack/"
-          target="_blank"
-        >
-          Docs for This Template
-        </a>
-      </li>
-    </ul>
-    <h2>Ecosystem</h2>
-    <ul>
-      <li>
-        <a
-          href="http://router.vuejs.org/"
-          target="_blank"
-        >
-          vue-router
-        </a>
-      </li>
-      <li>
-        <a
-          href="http://vuex.vuejs.org/"
-          target="_blank"
-        >
-          vuex
-        </a>
-      </li>
-      <li>
-        <a
-          href="http://vue-loader.vuejs.org/"
-          target="_blank"
-        >
-          vue-loader
-        </a>
-      </li>
-      <li>
-        <a
-          href="https://github.com/vuejs/awesome-vue"
-          target="_blank"
-        >
-          awesome-vue
-        </a>
-      </li>
-    </ul>
-  </div>
+    <div class="hello">
+        <ul>
+            <li v-for="(item,index) in users" :key="item._id">
+                {{ index + 1 }}.{{ item.username }}
+                <el-button @click="del_user(index)">删除</el-button>
+            </li>
+        </ul>
+        <el-button type="primary" @click="logout()">注销</el-button>
+    </div>
 </template>
 
 <script>
+import axios from '../axios.js'
 export default {
-  name: 'HelloWorld',
-  data () {
-    return {
-      msg: 'Welcome to Your Vue.js App'
+    name: 'HelloWorld',
+    data () {
+        return {
+            users: ''
+        }
+    },
+    created () {
+        axios.getUser().then((response) => {
+            if (response.status === 401) {
+                //不成功跳转回登录页
+                this.$router.push('/login');
+                //并且清除掉这个token
+                this.$store.dispatch('UserLogout');
+            } else {
+                //成功了就把data.result里的数据放入users，在页面展示
+                this.users = response.data.result;
+            }
+        })
+    },
+    methods: {
+        del_user (index, event) {
+            let thisID = {
+                id: this.users[index]._id
+            }
+            axios.delUser(thisID)
+                .then(response => {
+                    this.$message({
+                        type: 'success',
+                        message: '删除成功'
+                    });
+                    //移除节点
+                    this.users.splice(index, 1);
+                }).catch((err) => {
+                    console.log(err);
+                });
+        },
+        logout () {
+            //清除token
+            this.$store.dispatch('UserLogout');
+            if (!this.$store.state.token) {
+                this.$router.push('/login')
+                this.$message({
+                    type: 'success',
+                    message: '登出成功'
+                })
+            } else {
+                this.$message({
+                    type: 'info',
+                    message: '登出失败'
+                })
+            }
+        },
     }
-  }
 }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-h1, h2 {
-  font-weight: normal;
+h1,
+h2 {
+    font-weight: normal;
 }
 ul {
-  list-style-type: none;
-  padding: 0;
+    list-style-type: none;
+    padding: 0;
 }
 li {
-  display: inline-block;
-  margin: 0 10px;
+    display: inline-block;
+    margin: 0 10px;
 }
 a {
-  color: #42b983;
+    color: #42b983;
+}
+.hello {
+    font-family: 'Avenir', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+    color: #2c3e50;
+    width: 400px;
+    margin: 60px auto 0 auto;
 }
 </style>
